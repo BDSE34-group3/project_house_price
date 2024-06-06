@@ -215,12 +215,12 @@ def get_total_house_info(house_partial_url_list: list, target: str, start, end):
 if __name__ == "__main__":
     # (執行前要切到py檔目錄位置)########################################################
     # (改這邊決定要撈哪一個檔案)########################################################
-    # target = "taipei"
-    target = "newtaipei"  #
+    target = "taipei"
+    # target = "newtaipei"  #
     logger = set_logger()
     logger.info(f"接下來要跑{target}，591_中古屋_info清單")
     house_partial_url_list = get_house_list(f"references/{target}_591_all_list.json")
     # 下面決定負責的範圍[start:end]#####################################################
     total_house_info = get_total_house_info(
-        house_partial_url_list, target, start=0, end=10
+        house_partial_url_list, target, start=724, end=100000
     )
