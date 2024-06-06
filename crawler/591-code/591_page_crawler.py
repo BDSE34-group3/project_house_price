@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 import re
 import warnings
 from datetime import datetime
@@ -158,21 +159,19 @@ def get_total_house_info(house_partial_url_list: list, target: str, start, end):
     count_to_save = 0
     count_times = 0
     save_at_threshold = 5
-    # (改這邊可以大家一起爬)#########################################################
+
+    directory = "result-data"
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+
     for house_partial_url in house_partial_url_list[start:end]:
-        count_times += 1
         sleep(6)
         single_entry_dict = get_single_page_info(house_partial_url)
-        logger.info(
-            f"目前執行到{target}list中第{start+count_times}筆，若斷掉了就從這繼續"
-        )
         if single_entry_dict:
             total_house_info.append(single_entry_dict)
-            count_to_save += 1
         else:
             logger.error(f"url:{house_partial_url}, 已加入重撈清單")
             error_house_list.append(house_partial_url)
-            count_to_save += 1
 
         if count_to_save == save_at_threshold:  # 每達到設定值，就存一次，避免失敗
             with open(
@@ -190,8 +189,12 @@ def get_total_house_info(house_partial_url_list: list, target: str, start, end):
                 encoding="utf-8",
             ) as f:
                 f.write(json.dumps(total_house_info, ensure_ascii=False, indent=4))
+            logger.info(
+                f"已經存了{len(total_house_info)}筆成功資料，{len(error_house_list)}筆失敗資料，目前執行到{target}list中第{start+count_times}筆，若斷掉了就從這繼續"
+            )
             count_to_save = 0
-            logger.info(f"已經存了{len(total_house_info)}筆資料")
+        count_times += 1
+        count_to_save += 1
 
     with open(
         f"result-data/{formatted_now}_{target}_page_error_list_{start}_to_{end}.json",
@@ -208,7 +211,9 @@ def get_total_house_info(house_partial_url_list: list, target: str, start, end):
         encoding="utf-8",
     ) as f:
         f.write(json.dumps(total_house_info, ensure_ascii=False, indent=4))
-    logger.info(f"總共存了{len(total_house_info)}筆資料")
+    logger.info(
+        f"結束了，總共存了{len(total_house_info)}筆成功資料，{len(error_house_list)}筆失敗資料"
+    )
     return total_house_info
 
 
@@ -222,5 +227,5 @@ if __name__ == "__main__":
     house_partial_url_list = get_house_list(f"references/{target}_591_all_list.json")
     # 下面決定負責的範圍[start:end]#####################################################
     total_house_info = get_total_house_info(
-        house_partial_url_list, target, start=0, end=10
+        house_partial_url_list, target, start=20000, end=20021
     )
