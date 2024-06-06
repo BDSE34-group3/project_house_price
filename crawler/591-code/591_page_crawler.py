@@ -2,6 +2,7 @@ import json
 import logging
 import re
 import warnings
+from datetime import datetime
 from time import sleep
 
 import requests
@@ -134,8 +135,7 @@ def get_single_page_info(partial_url):
             else:
                 single_entry[soup.select_one("div.house-pic-title").text] = None
         except:
-            logger.error(f"url:{url} ;  問題:網頁下方圖片有問題")
-            return None
+            logger.error(f"url:{url} ;  問題:網頁下方應該沒有圖片，不會進入重撈list")
 
         return single_entry
     else:
@@ -150,16 +150,22 @@ def get_house_list(path: str):
     return house_list
 
 
-def get_total_house_info(house_partial_url_list: list, target: str):
+def get_total_house_info(house_partial_url_list: list, target: str, start, end):
+    now = datetime.now()
+    formatted_now = now.strftime("%Y%m%d_%H%M%S")
     total_house_info = []
     error_house_list = []
     count_to_save = 0
-    save_at_threshold = 100
+    count_times = 0
+    save_at_threshold = 5
     # (改這邊可以大家一起爬)#########################################################
-    for house_partial_url in house_partial_url_list:
+    for house_partial_url in house_partial_url_list[start:end]:
+        count_times += 1
         sleep(6)
         single_entry_dict = get_single_page_info(house_partial_url)
-
+        logger.info(
+            f"目前執行到{target}list中第{start+count_times}筆，若斷掉了就從這繼續"
+        )
         if single_entry_dict:
             total_house_info.append(single_entry_dict)
             count_to_save += 1
@@ -170,7 +176,7 @@ def get_total_house_info(house_partial_url_list: list, target: str):
 
         if count_to_save == save_at_threshold:  # 每達到設定值，就存一次，避免失敗
             with open(
-                f"result-data/{target}_error_591_page_crawler_info.json",
+                f"result-data/{formatted_now}_{target}_page_error_list_{start}_to_{end}.json",
                 "w",
                 encoding="utf-8",
             ) as f:
@@ -179,7 +185,7 @@ def get_total_house_info(house_partial_url_list: list, target: str):
                 )  # 最後結束時再存一次
 
             with open(
-                f"result-data/{target}_591_page_crawler_info.json",
+                f"result-data/{formatted_now}_{target}_page_result_{start}_to_{end}.json",
                 "w",
                 encoding="utf-8",
             ) as f:
@@ -188,14 +194,18 @@ def get_total_house_info(house_partial_url_list: list, target: str):
             logger.info(f"已經存了{len(total_house_info)}筆資料")
 
     with open(
-        f"result-data/{target}_error_591_page_crawler_list.json", "w", encoding="utf-8"
+        f"result-data/{formatted_now}_{target}_page_error_list_{start}_to_{end}.json",
+        "w",
+        encoding="utf-8",
     ) as f:
         f.write(
             json.dumps(error_house_list, ensure_ascii=False, indent=4)
         )  # 最後結束時再存一次
 
     with open(
-        f"result-data/{target}_591_page_crawler_list.json", "w", encoding="utf-8"
+        f"result-data/{formatted_now}_{target}_page_result_{start}_to_{end}.json",
+        "w",
+        encoding="utf-8",
     ) as f:
         f.write(json.dumps(total_house_info, ensure_ascii=False, indent=4))
     logger.info(f"總共存了{len(total_house_info)}筆資料")
@@ -205,11 +215,12 @@ def get_total_house_info(house_partial_url_list: list, target: str):
 if __name__ == "__main__":
     # (執行前要切到py檔目錄位置)########################################################
     # (改這邊決定要撈哪一個檔案)########################################################
-    target = "taipei"
-    # target = 'newtaipei'#
+    # target = "taipei"
+    target = "newtaipei"  #
     logger = set_logger()
     logger.info(f"接下來要跑{target}，591_中古屋_info清單")
-    house_partial_url_list = get_house_list(f"result-data/{target}_591_all_list.json")
-    # 下面決定負責的範圍[0:100]
-    house_partial_url_list = house_partial_url_list[0:10]  ############################
-    total_house_info = get_total_house_info(house_partial_url_list, target)
+    house_partial_url_list = get_house_list(f"references/{target}_591_all_list.json")
+    # 下面決定負責的範圍[start:end]#####################################################
+    total_house_info = get_total_house_info(
+        house_partial_url_list, target, start=0, end=10
+    )

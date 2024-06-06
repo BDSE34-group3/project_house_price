@@ -2,6 +2,7 @@ import json
 import logging
 import re
 import warnings
+from datetime import datetime
 from time import sleep
 
 from selenium import webdriver
@@ -166,14 +167,21 @@ def get_single_page_coordinate(partial_url):
     return single_entry
 
 
-def get_total_coordinate(house_partial_url_list: list, driver, file_name):
+def get_total_coordinate(house_partial_url_list: list, driver, target, start, end):
+    now = datetime.now()
+    formatted_now = now.strftime("%Y%m%d_%H%M%S")
     total_house_coordinate = []
     total_error_house_coordinate = []
+    count_times = 0
     count_to_save = 0
-    save_at_threshold = 100
+    save_at_threshold = 10
 
-    for house_partial_url in house_partial_url_list:
+    for house_partial_url in house_partial_url_list[start:end]:
         url = f"https://sale.591.com.tw{house_partial_url}"
+        count_times += 1
+        logger.info(
+            f"目前執行到{target}list中第{start+count_times}筆，若斷掉了就從這繼續"
+        )
         driver.get(url)
         single_house_coordinate = get_single_page_coordinate(house_partial_url)
         if single_house_coordinate:
@@ -183,7 +191,7 @@ def get_total_coordinate(house_partial_url_list: list, driver, file_name):
             total_error_house_coordinate.append(house_partial_url)
         if count_to_save == save_at_threshold:
             with open(
-                f"result-data/{file_name}_591_page_crawler_for_coordinate.json",
+                f"result-data/{formatted_now}_{target}_coordinate_{start}_to_{end}.json",
                 "w",
                 encoding="utf-8",
             ) as f:
@@ -192,7 +200,7 @@ def get_total_coordinate(house_partial_url_list: list, driver, file_name):
                 )
 
             with open(
-                f"result-data/{file_name}_error_591_page_crawler_for_coordinate.json",
+                f"result-data/{formatted_now}_{target}_error_coordinate_list_{start}_to_{end}.json",
                 "w",
                 encoding="utf-8",
             ) as f:
@@ -204,14 +212,14 @@ def get_total_coordinate(house_partial_url_list: list, driver, file_name):
             logger.info(f"已經存了{len(total_house_coordinate)}筆資料")
 
     with open(
-        f"result-data/{file_name}_591_page_crawler_for_coordinate.json",
+        f"result-data/{formatted_now}_{target}_coordinate_{start}_to_{end}.json",
         "w",
         encoding="utf-8",
     ) as f:
         f.write(json.dumps(total_house_coordinate, ensure_ascii=False, indent=4))
 
     with open(
-        f"result-data/{file_name}_error_591_page_crawler_for_coordinate.json",
+        f"result-data/{formatted_now}_{target}_error_coordinate_list_{start}_to_{end}.json",
         "w",
         encoding="utf-8",
     ) as f:
@@ -224,10 +232,9 @@ if __name__ == "__main__":
     # target = 'taipei'#(決定要爬的檔案)#####################################
     target = "newtaipei"  ##################################################
     logger.info(f"接下來要跑{target}，591_中古屋_coordinate清單")
-    house_partial_url_list = get_house_list(f"result-data/{target}_591_all_list.json")
+    house_partial_url_list = get_house_list(f"references/{target}_591_all_list.json")
     # (改需要爬的比數)########################################################
-    house_partial_url_list = house_partial_url_list[0:10]
     total_house_coordinate = get_total_coordinate(
-        house_partial_url_list, driver, f"{target}"
+        house_partial_url_list, driver, f"{target}", start=0, end=11
     )
     driver.quit()
