@@ -27,7 +27,7 @@ from selenium.webdriver.support import expected_conditions as EC
 # (三人行) 以...搜尋指定物件 (如: ID、Name、連結內容等...)
 from selenium.webdriver.common.by import By 
 
-# 處理逾時例外的工具
+# 處理逾時例外的工具 (網頁反應遲緩 or 網路不穩定)
 from selenium.common.exceptions import TimeoutException
 
 # 加入行為鍊 ActionChain (在 WebDriver 中模擬滑鼠移動、點擊、拖曳、按右鍵出現選單，以及鍵盤輸入文字、按下鍵盤上的按鈕等)
@@ -86,7 +86,7 @@ def set_driver(url):
     driver.get(url)
     return driver
 
-""" 滾動頁面(但我沒放入) """
+""" 滾動頁面 (但這裡沒用到) """
 def scroll():
     # JS元素
     innerHeight = 0 # 瀏覽器內部的高度
@@ -137,54 +137,70 @@ def scroll():
         # print (innerHeight)
 
 """ 抓取信義房屋每筆選項的URL(在 a 裡面) """
-def house_list(driver, save_file_name:str, total_pages=246):
+def house_list(driver, save_file_name:str, total_pages=305):
     # 初始化一個集合來儲存所有房屋的資訊
     all_house_data = []
 
-    # 瀏覽每一頁
-    for page in range(1, total_pages+1):
-        # 動態生成每一頁的URL
-        # current_url = f'https://www.sinyi.com.tw/buy/list/Taipei-city/default-desc/{page}'
-        current_url = f'https://www.sinyi.com.tw/buy/list/NewTaipei-city/default-desc/{page}'
-        # 導航到當前頁面
-        driver.get(current_url)
-        # 等待頁面開始加載
-        sleep(5)  
-        
-        # try:
-        # 等待直到頁面上所有的房屋列表項目被加載
-        WebDriverWait(driver,10).until(
-            EC.presence_of_all_elements_located((By.CLASS_NAME, "buy-list-item"))
-        )
-        # 強制等待，確保頁面元素完全加載
-        sleep(5)
+    try:
+        # 瀏覽每一頁
+        for page in range(1, total_pages+1):
+            # 動態生成每一頁的URL
+            # current_url = f'https://www.sinyi.com.tw/buy/list/Taipei-city/default-desc/{page}'
+            current_url = f'https://www.sinyi.com.tw/buy/list/NewTaipei-city/default-desc/{page}'
+            # 導航到當前頁面
+            driver.get(current_url)
+            # 等待頁面開始加載
+            sleep(5)  
+            
+            try:
+                # 等待直到頁面上所有的房屋列表項目被加載
+                WebDriverWait(driver,10).until(
+                    EC.presence_of_all_elements_located((By.CLASS_NAME, "buy-list-item"))
+                )
+            except TimeoutException:
+                print(f"第{page}頁無房屋列表，可能已超過實際頁數，爬蟲結束")
+                break
 
-        # 解析當前頁面的HTML
-        soup = bs(driver.page_source, 'html.parser')
+            # 強制等待，確保頁面元素完全加載
+            sleep(5)
 
-        # 查找所有的房屋元素
-        house_list = soup.find_all('div', class_='buy-list-item')
-        for hlist in house_list:
-            # 提取每個房子的ID
-            house_id = hlist.get('id')
-            # 在房屋選項中找到<a>標籤
-            a_tag = hlist.find('a', href=True)
-            # 提取<a>標籤的href屬性，若無<a>標籤則返回'No link available'
-            href = a_tag['href'] if a_tag else 'No link available'
-            # 紀錄房屋ID，鏈接，和頁碼
-            all_house_data.append(href)
+            # 解析當前頁面的HTML
+            soup = bs(driver.page_source, 'html.parser')
 
-        logger.info(f'已爬完第{page}頁')
+            # 查找所有的房屋元素
+            house_list = soup.find_all('div', class_='buy-list-item')
 
-        # 休息後再進行下一頁的加載，減緩請求速率
-        sleep(5)
+            # 如果沒有房屋列表，提前結束
+            if not house_list:
+                print(f"第{page}頁沒有房屋資訊，可能已到最後一頁")
+                break
 
-    # 將字典資料轉存成 JSON
-    with open(save_file_name, 'a', encoding='utf-8') as file:
-        json.dump(all_house_data, file, ensure_ascii=False, indent=4)
+            for hlist in house_list:
+                # 提取每個房子的ID
+                house_id = hlist.get('id')
+                # 在房屋選項中找到<a>標籤
+                a_tag = hlist.find('a', href=True)
+                # 提取<a>標籤的href屬性，若無<a>標籤則返回'No link available'
+                href = a_tag['href'] if a_tag else 'No link available'
+                # 紀錄房屋ID，鏈接，和頁碼
+                all_house_data.append(href)
 
-    # 爬蟲完成
-    print('Data fetching complete.')  
+            logger.info(f'已爬完第{page}頁')
+
+            # 休息後再進行下一頁的加載，減緩請求速率
+            sleep(5)
+
+        # 將字典資料轉存成 JSON
+        with open(save_file_name, 'a', encoding='utf-8') as file:
+            json.dump(all_house_data, file, ensure_ascii=False, indent=4)
+
+    except Exception as e:
+        logger.error(f"爬取過程中發生錯誤: {e}")
+
+    # 確保無論如何(成功、錯誤、被中斷)都能關閉程式碼
+    finally:
+        print('爬蟲結束')
+        driver.quit()   
 
 """ 函式 """
 if __name__ == '__main__':
