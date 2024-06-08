@@ -43,6 +43,7 @@ def set_logger():
 
 
 def set_driver():
+    global driver
     options = webdriver.ChromeOptions()
     # options.add_argument('--headless')#不開啟瀏覽器視窗
     options.add_argument("--start-maximized")  # 最大化視窗
@@ -56,6 +57,9 @@ def set_driver():
     )  # 關閉通知彈跳
     driver = webdriver.Chrome(options=options)
     return driver
+
+def driver_quit(driver):
+    driver.quit()
 
 
 # 滑到網頁最底部
@@ -117,6 +121,7 @@ def scroll():
 
         # 為了實驗功能，捲動超過一定的距離，就結束程式
         if offset >= 600:
+            sleep(3)
             break
 
 
@@ -127,7 +132,7 @@ def get_house_list(path: str):
     return house_list
 
 
-def get_single_page_coordinate(partial_url):
+def get_single_page_coordinate(partial_url, driver):
     try:
         single_entry = {}
         WebDriverWait(driver, 10).until(
@@ -181,10 +186,26 @@ def get_total_coordinate(house_partial_url_list: list, driver, target, start, en
     if not os.path.exists(directory):
         os.makedirs(directory)
 
+    #美幾次重開broswer降低iframe異常
+    threshold_restart_driver = 100
+    count_for_restart = 0
+    
     for house_partial_url in house_partial_url_list[start:end]:
         url = f"https://sale.591.com.tw{house_partial_url}"
-        driver.get(url)
-        single_house_coordinate = get_single_page_coordinate(house_partial_url)
+        if count_for_restart < threshold_restart_driver:
+            driver.get(url)
+            single_house_coordinate = get_single_page_coordinate(house_partial_url, driver)
+            count_for_restart += 1
+        else:
+            driver_quit(driver)
+            driver = set_driver()
+            driver.get(url)
+            sleep(10)
+            single_house_coordinate = get_single_page_coordinate(house_partial_url, driver)
+            count_for_restart = 1
+            logger.info(f'重開瀏覽器避免瀏覽器異常')
+        
+        
         if single_house_coordinate:
             total_house_coordinate.append(single_house_coordinate)
         else:
@@ -242,6 +263,6 @@ if __name__ == "__main__":
     logger.info(f"接下來要跑{target}，591_中古屋_coordinate清單")
     house_partial_url_list = get_house_list(f"references/{target}_591_all_list.json")
     total_house_coordinate = get_total_coordinate(
-        house_partial_url_list, driver, f"{target}", start=20000, end=20022
+        house_partial_url_list, driver, f"{target}", start=29840, end=30000
     )  # (改需要爬的筆數)#######################################################
     driver.quit()

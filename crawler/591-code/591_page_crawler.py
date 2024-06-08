@@ -227,5 +227,5 @@ if __name__ == "__main__":
     house_partial_url_list = get_house_list(f"references/{target}_591_all_list.json")
     # 下面決定負責的範圍[start:end]#####################################################
     total_house_info = get_total_house_info(
-        house_partial_url_list, target, start=20000, end=20021
+        house_partial_url_list, target, start=23700, end=30000
     )
