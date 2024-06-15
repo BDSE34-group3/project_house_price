@@ -8,8 +8,10 @@ near_fac = pd.read_csv("../../all_data/near_fac_corrected.csv")
 cc.convert_lat_lon_to_tuple(near_fac, "Latitude", "Longitude")
 
 
-house_df = pd.read_csv("../../all_data/主資料集/台北市_10101_11303_房價data.csv")
-house_df = house_df.head(10)
+house_df = pd.read_csv(
+    "../../all_data/內政部實價登錄_data/台北市_10101_11303_房價data.csv"
+)
+# house_df = house_df.head(10)
 
 cc.convert_lat_lon_to_tuple(house_df, "latitude", "longitude")
 
