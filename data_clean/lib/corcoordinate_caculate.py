@@ -58,5 +58,7 @@ def distance_caculate_and_cat_counts(
                 if distance < cp:
                     counter_dict[cp] += 1
                     break  # using break >> interval, if not >> accumulation
-            for cp in key_list:
-                house_df.loc[index, f"{group_name}_under_{cp}_m"] = counter_dict[cp]
+
+        # each house cor finished and then to assign value to corresponse column
+        for cp in key_list:
+            house_df.loc[index, f"{group_name}_under_{cp}_m"] = counter_dict[cp]
