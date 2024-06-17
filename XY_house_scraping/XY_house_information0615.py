@@ -54,7 +54,7 @@ def set_log():
     formatter = log.Formatter('%(asctime)s - %(levelname)s - %(message)s', "%Y-%m-%d %H:%M:%S")
 
     # 儲存在 log 當中的事件處理器
-    fileHandler = log.FileHandler('XY_house_NewTaipei.log', mode='a', encoding='utf-8') # a: append, w: write
+    fileHandler = log.FileHandler('XY_house_Taipei.log', mode='a', encoding='utf-8') # a: append, w: write
     fileHandler.setFormatter(formatter)
 
     # 輸出在終端機介面上的事件處理器
@@ -157,7 +157,7 @@ def XY_url_information(partial_url, all_house_data):
         soup = bs(html_source, 'html.parser')
 
         data = {}
-        
+
         # 區塊一
         try:
             # 房名
@@ -261,13 +261,29 @@ def XY_url_information(partial_url, all_house_data):
         try:
             # 爬取所有 buy-content-basic-cell 下的 div
             block3 = soup.select('div.buy-content-body-grid div.buy-content-basic-cell')
+
             for div in block3:
                 key = div.select_one('div.basic-title').text.strip()
-                span_elements = div.select('div.basic-value span')
-                if span_elements:
-                    value = span_elements[0].text.strip()
+                value_elements = div.select('div.basic-value span')
+
+                # 若 value_elements 存在，則抓取第一個 <span>
+                if value_elements:
+                    value_text = value_elements[0].text.strip()
+                    # 若抓取的 <span> 是 「＋」 或 「＝」，則改抓 <div>
+                    if '＋' in value_text or '＝' in value_text:
+                        value = div.select_one('div.basic-value').text.strip()
+                    else:
+                        value = value_text 
+
+                # 若 value_elements 不存在，則改抓第一個 <div>
                 else:
                     value = div.select_one('div.basic-value').text.strip()
+                
+                # 因 div.basic-value 會抓取 div下方的所有元素 → 爬取的資料還是會有符號
+                if value.endswith('＋') or value.endswith('＝'):
+                    # 若尾端有符號，則將之刪除
+                    value = value[:-1].strip()
+
                 data[key] = value
                 logger.info(f"{key}: {value}")
 
@@ -285,7 +301,7 @@ def XY_url_information(partial_url, all_house_data):
             # 爬取經緯度
             try:
                 # 等待區塊載入
-                block4 = WebDriverWait(driver, 3).until(
+                block4 = WebDriverWait(driver, 4).until(
                     EC.element_to_be_clickable((By.CSS_SELECTOR, ".view-lifeInfo-btn.d-none.d-lg-inline-block"))
                 )
                 
@@ -293,7 +309,7 @@ def XY_url_information(partial_url, all_house_data):
                 driver.execute_script("arguments[0].click();", block4)
 
                 # 等待資訊載入後，獲取<a>內的資料
-                a_information = WebDriverWait(driver, 6).until(
+                a_information = WebDriverWait(driver, 3).until(
                     EC.visibility_of_element_located((By.CSS_SELECTOR, "div.d-md-none.d-lg-block a"))
                 )
 
@@ -315,7 +331,6 @@ def XY_url_information(partial_url, all_house_data):
 
                 sleep(2)
 
-                driver.quit()
             except Exception as e:
                 print("點擊時發生錯誤:", e)
 
@@ -323,11 +338,14 @@ def XY_url_information(partial_url, all_house_data):
             logger.error(f"url:{url} 區塊四出現錯誤: {e}")
             return None
         
+        # 註記: 記錄爬取網址
+        data['網址'] = url
+
         # 把房屋資料加入列表
         all_house_data.append(data)  # 添加成功抓取的房屋資訊
 
         # 將所有房屋資料寫入 JSON 檔案
-        with open('house_urls_NewTaipei.json', 'a', encoding='utf-8') as f:
+        with open('house_urls_NewTaipei.json', 'w', encoding='utf-8') as f:
             json.dump(all_house_data, f, ensure_ascii=False, indent=4)
 
     except Exception as e:
@@ -346,7 +364,7 @@ if __name__ == "__main__":
     driver = set_driver()
 
     logger = set_log()
-    logger.info('XY_house_information1')
+    logger.info('開始信義房屋的爬蟲')
 
     # 初始化儲存抓取成功 URL 的列表
     all_house_data = []  
@@ -356,7 +374,7 @@ if __name__ == "__main__":
     # 讀取房屋list文件
     house_list_path = 'C:\\python_web_scraping\\XY_house_scraping\\XY_house_Taipei\\XY_house_urls_Taipei.json'
     readurl = get_house_list(house_list_path)
-    
+
     # 依序將文件內的網址組合、開啟，並爬取所需資料
     for url in readurl:
         house_data = XY_url_information(url, all_house_data)
@@ -365,11 +383,12 @@ if __name__ == "__main__":
         else:
             logger.error(f"無法抓取房屋資料，URL：{url}")
             error_house_list.append(url)
-
     
-    h_list = XY_url_information(driver, 'house_urls_NewTaipei.json')
+    # 以 house_urls_Taipei 存成 json檔
+    h_list = XY_url_information(driver, 'XY_house_Taipei_information.json')
 
     # 關閉
     driver.quit()
+
     logger.info('所有房屋資料已保存到 JSON 檔案')
     
