@@ -11,6 +11,9 @@ def combine_file_under_dir(target_dir: str, output_file: str):
     output_file (str): 輸出合併後的檔案名稱
     """
 
+    # 用來暫存所有讀進來的檔案df
+    tmp_dataframes_list = []
+
     # 指定要查詢的路徑
     # 列出指定路徑底下所有檔案(包含資料夾)
     allFileList = os.listdir(target_dir)
@@ -18,7 +21,14 @@ def combine_file_under_dir(target_dir: str, output_file: str):
     # 把資料夾底下全部檔案寫成"一個"完整的大檔案
     for file in allFileList:
         tmp_df = pd.read_csv(target_dir + file)
-        tmp_df.to_csv(path_or_buf=output_file, mode="a", encoding="utf-8")
+        tmp_dataframes_list.append(tmp_df)  # 把讀進來的所有dfs先放到list當中
+        # tmp_df.to_csv(path_or_buf=output_file, mode="a", encoding="utf-8", index=False)
+
+    # 將所有CSV檔案讀取成DataFrame並存入列表，然後使用 pd.concat 將這些DataFrame合併成一個(就不會有欄位值重複寫入的問題)，concat本來就是丟一個list進去，所以可以concat多個df
+    combined_df = pd.concat(tmp_dataframes_list, axis=0, ignore_index=True)  
+
+    # 寫入檔案
+    combined_df.to_csv(path_or_buf=output_file, mode="a", encoding="utf-8", index=False)
 
 
 # 目前用在房價資料集可能會有問題
@@ -55,6 +65,8 @@ def remove_duplicated(csv_file, column: str):
             count_drop_rows += 1
     print(f"There are {count_drop_rows} duplicated rows, have been drop")
 
+    # 還沒寫檔喔
+
 
 if __name__ == "__main__":
 
@@ -62,4 +74,4 @@ if __name__ == "__main__":
     combine_file_under_dir("C:/Users/student/Desktop/test_dir/", "./test_file.csv")
 
     # 用在房價資料有點問題
-    remove_duplicated("./test_file.csv", "address")
+    # remove_duplicated("./test_file.csv", "address")
