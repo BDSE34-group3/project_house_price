@@ -193,7 +193,7 @@ def XY_url_information(partial_url, all_house_data, index):
                 # 若爬下來的 原始資料full_address_text 沒有「地址」，則使用原始資料
                 else:
                     data['地址'] = full_address_text
-                logger.info(f'地址: {data['地址']}')
+                logger.info(f"地址: {data['地址']}")
             else:
                 logger.error(f"url:{url} 第{index+1}筆 無法找到地址")
 
