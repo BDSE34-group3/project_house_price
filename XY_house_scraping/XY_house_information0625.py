@@ -163,7 +163,7 @@ def XY_url_information(partial_url, all_house_data, index):
 
     try:
         driver.get(url)
-        sleep(5)  # 等待頁面完全加載
+        sleep(4)  # 等待頁面完全加載
 
         # 獲取頁面的 HTML 源碼
         html_source = driver.page_source
@@ -315,7 +315,7 @@ def XY_url_information(partial_url, all_house_data, index):
             # 爬取經緯度
             try:
                 # 等待區塊載入
-                block4 = WebDriverWait(driver, 3).until(
+                block4 = WebDriverWait(driver, 2).until(
                     EC.element_to_be_clickable((By.CSS_SELECTOR, ".view-lifeInfo-btn.d-none.d-lg-inline-block"))
                 )
                 
@@ -343,7 +343,7 @@ def XY_url_information(partial_url, all_house_data, index):
                 else:
                     logger.error('點擊失敗，無法抓取經緯度')
 
-                sleep(4)
+                sleep(2)
 
             except Exception as e:
                 logger.error(f"url:{url} 第{index+1}筆的區塊四出現錯誤: {e}")
@@ -376,6 +376,8 @@ def XY_url_information(partial_url, all_house_data, index):
         except Exception as e:
             logger.error(f"url:{url} 區塊五出現錯誤: {e}")
             return None
+        
+        sleep(1)
         
         # 註記: 記錄爬取網址
         data['網址'] = url
