@@ -1,0 +1,27 @@
+.embedded-container {
+    padding: 20px;
+    margin: 20px;
+    border: 2px solid #ccc;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+/* RWD 調整 */
+@media (max-width: 768px) {
+    .embedded-container {
+        margin: 10px;
+        padding: 10px;
+    }
+
+    .tableauViz {
+        width: 100% !important;
+        height: auto !important;
+    }
+}
+
+@media (max-width: 400px) {
+    .tableauViz {
+        width: 60% !important;
+        height: auto !important;
+    }
+}
