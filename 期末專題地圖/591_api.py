@@ -10,22 +10,6 @@ app.json.ensure_ascii = False
 def index():
     return render_template('591_try2.html')  # Serve the HTML page
 
-# @app.route('/result', methods=['GET'])
-# def get_houseData():
-#     # 提取查詢參數
-#     city = request.args.get('city')
-#     district = request.args.get('district')
-
-#     json_file_path = os.path.join('/path/to/your/json/file', 'result.json')  # Ensure correct path
-#     try:
-#         with open(json_file_path, 'r', encoding='utf-8') as file:  # Ensure UTF-8 encoding for non-ASCII characters
-#             result_json = json.load(file)
-#         # 根據城市和地區過濾數據
-#         filtered_data = [item for item in result_json if item.get('city') == city and item.get('district') == district]
-#         return jsonify(filtered_data)  # Return JSON response with filtered data
-#     except Exception as e:
-#         return jsonify({"error": str(e)}), 500
-
 
 @app.route('/submit', methods=['GET'])
 def submit_data():
@@ -64,6 +48,27 @@ def submit_data():
                 image_url = house_images_array[0] if house_images_array else '未提供'
             except json.JSONDecodeError:
                 image_url = '未提供'
+
+        for item in pine_cone_json:
+            parkinglot_string = item.get('含車位', '[]')
+    
+            # 檢查 parkinglot_string 是否為字符串類型，並是否為 '1' 或 '0'
+            if isinstance(parkinglot_string, str):
+                if parkinglot_string == '1':
+                    item['含車位'] = '含車位'
+                elif parkinglot_string == '0':
+                    item['含車位'] = '無車位'
+            # 如果 parkinglot_string 是整數類型
+            elif isinstance(parkinglot_string, int):
+                if parkinglot_string == 1:
+                    item['含車位'] = '含車位'
+                elif parkinglot_string == 0:
+                    item['含車位'] = '無車位'
+            # 如果值不是 '1' 或 '0'，或者不是整數 1 或 0，保持原值
+            else:
+                item['含車位'] = str(parkinglot_string)
+
+# 如果你需要在處理後使用更新的 pine_cone_json，它現在包含了修改後的值
             
             extracted_details = {
                 'index': item.get('index', '未提供'),
@@ -74,6 +79,7 @@ def submit_data():
                 '權狀坪數': item.get('權狀坪數', '未提供'),
                 '屋齡': item.get('屋齡', '未提供'),
                 '售價總價': item.get('售價總價', '未提供'),
+                '模型_實際價格': item.get('模型_實際價格', '未提供'),
                 '每坪售價': item.get('每坪售價', '未提供'),
                 '房屋圖片': image_url,
             }
@@ -88,66 +94,26 @@ def submit_data():
     print("Final response:", json.dumps(response, ensure_ascii=False, indent=2))
     return jsonify(response)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    # Check if pine_cone_json is a list and not empty
-    if isinstance(pine_cone_json, list) and len(pine_cone_json) > 0:
-        # Extract details from each entry in the list
-        extracted_data = []
-        for item in pine_cone_json:
-            house_images_string = item.get('房屋圖片', '[]')
-        if house_images_string and house_images_string != "不詳":
-            try:
-                house_images_array = json.loads(house_images_string.replace("'", '"'))
-            except json.JSONDecodeError:
-                house_images_array = []
-        else:
-            house_images_array = []
-                
-            house_images_array = json.loads(house_images_string.replace("'", '"'))
-            image_url = house_images_array[0] if house_images_array else '未提供'
-                
-            extracted_details = {
-                'index': item.get('index', '未提供'),
-                'longitude': item.get('longtitude', '未提供'),
-                'latitude': item.get('latitude', '未提供'),
-                '地址': item.get('地址', '未提供'),
-                '含車位': item.get('含車位', '未提供'),
-                '權狀坪數': item.get('權狀坪數', '未提供'),
-                '屋齡': item.get('屋齡', '未提供'),
-                '售價總價': item.get('售價總價', '未提供'),
-                '每坪售價': item.get('每坪售價', '未提供'),
-                '房屋圖片': image_url,
-            }
-            extracted_data.append(extracted_details)
-
-        
-
-
-
-
-        # Add extracted data to the response dictionary
-        response['extracted_data'] = extracted_data
-    else:
-        response['message'] = 'No data found or data is not in expected format.'
-
+@app.route('/initial_data', methods=['GET'])
+def get_initial_data():
+    # 這裡你可以返回一些默認的或隨機的數據
+    # 例如，你可以返回所有數據的一個子集，或者某個特定區域的數據
+    
+    # 示例：返回前100條數據
+    initial_data = get_sample_data(100)  # 你需要實現這個函數
+    
+    response = {
+        'message': 'Initial data loaded successfully!',
+        'extracted_data': initial_data
+    }
+    
     return jsonify(response)
+
+def get_sample_data(n):
+    # 實現這個函數來返回一個包含n條數據的列表
+    # 這可能涉及從數據庫或文件中讀取數據
+    # 返回的數據格式應該與 submit_data 路由返回的格式相同
+    pass
 
 
 

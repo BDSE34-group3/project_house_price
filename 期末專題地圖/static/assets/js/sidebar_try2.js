@@ -1,13 +1,21 @@
+let map;
+
+function initMap() {
+    map = L.map('map').setView([25.0339145, 121.5412233], 10);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    initMap();
+});
+
+
 document.addEventListener('DOMContentLoaded', function() {
     const citySelect = document.getElementById('citySelect');
     const districtSelect = document.getElementById('districtSelect');
-    //  // 當城市選擇發生變化時更新地區選項
-    //  citySelect.addEventListener('change', function() {
-    //     // 假設 fetchDistricts 是一個函數，根據城市從伺服器獲取地區選項
-    //     fetchDistricts(this.value);
-
-    // });
-
 
     const taipeiDistricts = [
         { value: "Songshan", text: "松山區" },
@@ -108,18 +116,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 //總坪數與總價格
@@ -355,54 +351,35 @@ function openPopup(popupId) {
     
 
     
-    let map;
+// let map;
 let layerGroup;
 
-function initMap() {
-    map = L.map('map').setView([25.0339145, 121.5412233], 7);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-    }).addTo(map);
+// function initMap() {
+//     map = L.map('map').setView([25.0339145, 121.5412233], 10);
+//     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+//         maxZoom: 19,
+//         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+//     }).addTo(map);
+// }
+function loadInitialData() {
+    const baseUrl = 'http://127.0.0.1:5000/initial_data';
+    fetchDataAndUpdateMap(baseUrl);
 }
+
 document.addEventListener('DOMContentLoaded', function() {
+    loadInitialData();
     initMap();
 });
-function submitForm(event) {
-    event.preventDefault();
-    const form = document.getElementById('myForm');
-    const city = form.city.value;
-    const district = form.district.value;
-    const totalPing = document.getElementById('total_ping').value;
-    const totalPrice = document.getElementById('total_price').value;
-    const propertyType = document.querySelector('input[name="property_type"]:checked')?.value;
-    
-    console.log('Form data:', { city, district, totalPing, totalPrice, propertyType });  // 添加這行
-
-    const baseUrl = 'http://127.0.0.1:5000/submit';
-    const queryParams = `?city=${encodeURIComponent(city)}&district=${encodeURIComponent(district)}&total_ping=${totalPing}&total_price=${totalPrice}&property_type=${propertyType}`;
-    const finalUrl = baseUrl + queryParams;
-
-    console.log('Submitting request to:', finalUrl);  // 添加這行
-    fetchDataAndUpdateMap(finalUrl);
-}
 
 function fetchDataAndUpdateMap(url) {
-    console.log('Fetching data from:', url);  // 添加這行
+    // console.log('Fetching data from:', url);  // 添加這行
     fetch(url)
         .then(response => response.json())
         .then(data => {
-            console.log('Received data:', data);  // 保留這行
-            if (data.extracted_data && Array.isArray(data.extracted_data)&& data.extracted_data.length > 0) {
-                console.log('Extracted data found, length:', data.extracted_data.length);
                 updateMap(data);
                 updateTable(data);
-            } else {
-                console.error('No extracted data in response:', data);
-                alert('沒找到符合條件')
-                // 可能的錯誤處理，例如顯示錯誤消息給用戶
             }
-        })
+        )
         .catch(error => {
             console.error('Error fetching data:', error);
             // 錯誤處理
@@ -425,10 +402,14 @@ function updateMap(data) {
     for (let o of data.extracted_data) {
         if (o.latitude && o.longitude) {
             let marker = L.marker([o.latitude, o.longitude])
-                .bindPopup(`<img src="${o['房屋圖片']}" alt="房屋圖片" width="100％; height:auto;"><br><a href="${o['地址']}" target="_blank">連結</a>`);
+                .bindPopup(`<img src="${o['房屋圖片']}" alt="房屋圖片" width="100％; height:auto;"><br><strong>地址：</strong> ${o['地址']}<br>`);
+            
+
+            marker.id = o.index;    
+            
             
             marker.addEventListener('click', function() {
-                console.log("Marker clicked:", o);
+                updateTableForMarker(o);
             });
             
             arrMarkers.push(marker);
@@ -441,25 +422,65 @@ function updateMap(data) {
     layerGroup.addTo(map);
 }
 
-function updateTable(data) {
-    let tbody = document.querySelector('table > tbody');
-    tbody.innerHTML = '';
-    
-    for (let o of data.extracted_data) {
+
+    function updateTableForMarker(markerData) {
+        let tbody = document.querySelector('table > tbody');
+        tbody.innerHTML = ''; // 清空現有的表格內容
+        
         let tr = document.createElement("tr");
         tr.innerHTML = `
-            <td>${o['售價總價']}</td>
-            <td>${o['屋齡']}</td>
-            <td>${o['權狀坪數']}</td>
-            <td>${o['地址']}</td>
-            <td>${o['含車位']}</td>
+            <td>${markerData['index']}</td>
+            <td>${markerData['售價總價']}</td>
+            <td>${markerData['屋齡']}</td>
+            <td>${markerData['權狀坪數']}</td>
+            <td>${markerData['模型_實際價格']}</td>
         `;
         tbody.appendChild(tr);
     }
+
+    function updateTable(data,singleMarker = false) {
+        let tbody = document.querySelector('table > tbody');
+        tbody.innerHTML = '';
+        
+        let dataToShow = singleMarker ? [data] : data.extracted_data;
+        
+        for (let o of data.extracted_data) {
+            let tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td>${o['index']}</td>
+                <td>${o['售價總價']}</td>
+                <td>${o['屋齡']}</td>
+                <td>${o['權狀坪數']}</td>
+                <td>${o['模型_實際價格']}</td>
+            `;
+            tbody.appendChild(tr);
+        }
+
+}
+function submitForm(event) {
+    event.preventDefault();
+    const form = document.getElementById('myForm');
+    const city = form.city.value;
+    const district = form.district.value;
+    const totalPing = document.getElementById('total_ping').value;
+    const totalPrice = document.getElementById('total_price').value;
+    const propertyType = document.querySelector('input[name="property_type"]:checked')?.value;
+    
+    // console.log('Form data:', { city, district, totalPing, totalPrice, propertyType });  // 添加這行
+
+    const baseUrl = 'http://127.0.0.1:5000/submit';
+    const queryParams = `?city=${encodeURIComponent(city)}&district=${encodeURIComponent(district)}&total_ping=${totalPing}&total_price=${totalPrice}&property_type=${propertyType}`;
+    const finalUrl = baseUrl + queryParams;
+
+    // console.log('Submitting request to:', finalUrl);  // 添加這行
+    fetchDataAndUpdateMap(finalUrl);
 }
 
 // 页面加载完成后初始化地图
-document.addEventListener('DOMContentLoaded', initMap);
+document.addEventListener('DOMContentLoaded', function(){
+    initMap();
+    loadInitialData();
+});
 
 // 添加提交按钮的事件监听器
 document.querySelector('button#submit').addEventListener('click', submitForm);
