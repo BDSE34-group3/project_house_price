@@ -1,0 +1,109 @@
+[
+    {
+        "model": "RandomForest",
+        "params": {
+            "model": "RandomForest",
+            "n_estimators": 35,
+            "max_depth": 3
+        },
+        "score": -19377636614.150303
+    },
+    {
+        "model": "XGBoost",
+        "params": {
+            "model": "XGBoost",
+            "n_estimators": 13,
+            "max_depth": 1,
+            "learning_rate": 0.05073699351681216
+        },
+        "score": -30805448806.38264
+    },
+    {
+        "model": "KNN",
+        "params": {
+            "model": "KNN",
+            "n_neighbors": 10
+        },
+        "score": -19248620941.584106
+    },
+    {
+        "model": "DecisionTree",
+        "params": {
+            "model": "DecisionTree",
+            "max_depth": 23
+        },
+        "score": -7453306553.6709795
+    },
+    {
+        "model": "LightGBM",
+        "params": {
+            "model": "LightGBM",
+            "n_estimators": 52,
+            "max_depth": 4,
+            "learning_rate": 0.16742058254134198
+        },
+        "score": -10471752708.179909
+    },
+    {
+        "model": "XGBoost",
+        "params": {
+            "model": "XGBoost",
+            "n_estimators": 35,
+            "max_depth": 5,
+            "learning_rate": 0.19113283929570044
+        },
+        "score": -9993362660.794228
+    },
+    {
+        "model": "MLP",
+        "params": {
+            "model": "MLP",
+            "hidden_layer_sizes": 75,
+            "alpha": 9.458677794162136e-05
+        },
+        "score": -20159829782.643246
+    },
+    {
+        "model": "KNN",
+        "params": {
+            "model": "KNN",
+            "n_neighbors": 18
+        },
+        "score": -20361917159.21258
+    },
+    {
+        "model": "DecisionTree",
+        "params": {
+            "model": "DecisionTree",
+            "max_depth": 4
+        },
+        "score": -17647924014.465763
+    },
+    {
+        "model": "DecisionTree",
+        "params": {
+            "model": "DecisionTree",
+            "max_depth": 13
+        },
+        "score": -8793598885.07981
+    },
+    {
+        "model": "MLP",
+        "params": {
+            "model": "MLP",
+            "hidden_layer_sizes": 80,
+            "alpha": 0.0013927140437473872
+        },
+        "score": -19903456291.623802
+    },
+    {
+        "model": "XGBoost",
+        "params": {
+            "model": "XGBoost",
+            "n_estimators": 79,
+            "max_depth": 4,
+            "learning_rate": 0.09211687012531616
+        },
+        "score": -10853192647.969095
+    }
+]
