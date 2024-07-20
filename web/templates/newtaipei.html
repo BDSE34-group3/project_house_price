@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>雙北房屋標的</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.2/dist/leaflet.css" integrity="sha256-sA+zWATbFveLLNqWO2gtiw3HL/lh1giY/Inf1BJ0z14=" crossorigin="" />
+    <style>
+        /* 初始時隱藏表格 */
+         #tableContainer {
+            display: none; 
+         }
+     *{
+        margin:0;
+        padding:0;
+        }
+        #map {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+           
+        }
+
+        #map-controls {
+            position:absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: row;
+            justify-content: center; /* Horizontally center the buttons */
+            align-items: center;
+            z-index: 1000; 
+        }
+
+        #map-controls button {
+            margin: 0 10px; /* 调整按钮之间的间距 */
+            background-color: #555;
+            color: white;
+            padding: 5px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+
+        thead, th, tbody, tr, td {
+            /* padding: 0 50px; */
+            position:relative;
+            /* border:1px solid black; */
+        }
+        table {
+            /* padding: 0 50px; */
+            position:relative;
+            /* border:1px solid black; */
+            padding-bottom: 65px;
+        }
+        thead{
+            background-color:#F0FFF0;
+        }
+        tr{
+            text-align: center;
+        }
+        tbody tr:nth-child(2n){background-color: #F5FFFA;
+        }
+        tbody tr:nth-child(2n+1){background-color:#F0FFFF;
+        }
+        .fit-popup {
+            border: 1px solid #ccc;
+            padding: 10px;
+            font-size: 14px;
+            font-style: italic;
+            font-weight: bolder;
+        }
+
+        .top {
+            display: none;
+            position: fixed;
+            bottom: 20px;
+            right: 3px;
+            background-color: rgb(255 ,20 ,147,0.2);
+            color: black;
+            padding: 10px 8px;
+            border-radius: 50%;
+            cursor: pointer;
+            z-index: 1000;
+        }
+
+        #btn_request {
+            top: 20px; 
+            left: 20px; 
+            background-color: #555;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        #Home{
+            background-color: #555;
+            color: #555;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+
+        #Home, #btn_request, #btn_layer1, #btn_layer2, #btn_layer3, #searchButton {
+            margin-bottom: 10px; /* 添加下方间距 */
+        }
+
+        #languageButton{
+            /* background-color: #555; */
+            /* color: #555; */
+            padding: 50px 20px;
+            padding-left: 100px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+        #tableHeader{
+            text-align: middle;
+        }
+    </style>
+</head>
+<body>
+    <div id="map">
+        <div id="map-controls">
+            <button id="Home" onclick="window.location.href='https://www.golfshake.com/course/top100/uk/'">Home</button>
+            <button id="btn_request">Top100</button>
+            <button id="btn_layer1">Rank1-33</button>
+            <button id="btn_layer2">Rank34-66 </button>
+            <button id="btn_layer3">Rank67-100</button>
+            <input type="text" id="searchInput" placeholder="Search Golfcourse">
+            <button id="searchButton">Search</button>
+            <!-- <div id="languageButton">
+                <select name="language" size="1">
+                    <option value="English" selected>English</option>
+                    <option value="Chinese">繁體中文</option> -->
+                </select>
+            </div>    
+            </div>
+        </div>
+    </div>    
+    <div id="tableContainer">
+    <table>
+        <thead>
+            <tr>
+                <th id="tableHeader">Rank</th>
+                <th>Course</th>
+                <th>Location</th>
+                <th>Address</th>
+                <th>Tel</th>
+                <th>Link</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table> 
+</div>
+    <div class="top" id="Top">Top</div>
+    <script src="https://unpkg.com/leaflet@1.9.2/dist/leaflet.js" integrity="sha256-o9N1jGDZrf5tS+Ft4gbIK7mYMipq9lqpVJ91xHSyKhg=" crossorigin=""></script>
+    <script>
+         let golfCoursesData; // Define golfCoursesData in the global scope
+
+    // Fetch 抓球場數據
+    fetch('http://127.0.0.1:5000/golf', {
+        method: "GET"
+    })
+    .then(response => response.json()) // 轉成 JSON 格式
+    .then(data => {
+        // 将解析后的数据赋值给 golfCoursesData 变量
+        golfCoursesData = data;
+    })
+    // 當按鈕被點擊時顯示表格
+    document.getElementById("btn_request").addEventListener("click", function() {
+        // 獲取表格容器
+        var tableContainer = document.getElementById("tableContainer");
+        // 將表格容器顯示出來
+        tableContainer.style.display = "block";
+    });
+
+    // 搜索按钮点击事件
+    document.getElementById('searchButton').addEventListener('click', function() {
+        // 获取搜索关键字
+        var searchInput = document.getElementById('searchInput').value.trim().toLowerCase();
+
+
+    // Check if golfCoursesData is defined
+    if (Array.isArray(golfCoursesData)) {
+        var matchingCourses = golfCoursesData.filter(course => {
+            return course.title.toLowerCase().includes(searchInput);
+        });
+
+        // 清除地图上的所有标记
+        map.eachLayer(function(layer) {
+            if (layer instanceof L.Marker) {
+                map.removeLayer(layer);
+            }
+        });
+
+                // 添加匹配的球场标记到地图上
+        matchingCourses.forEach(course => {
+            var marker = L.marker([course.Latitude, course.Longitude]).addTo(map)
+                .bindPopup(`<div style="max-width: 300px; text-align: center;">
+                                    ${course.title}<br>
+                                    <img src="${course['Image URL']}" alt="${course.title}" style="width: 100%; height: auto;"><br>
+                                    <a href="${course.Website}" target="_blank">Book Online</a>
+                                    </div>`, { className: 'fit-popup' })
+                .openPopup();
+        });
+
+    }
+});
+
+        var map = L.map('map').setView([51.347995,-0.4517726], 8);
+        let layer1 = L.layerGroup();
+        let layer2 = L.layerGroup();
+        let layer3 = L.layerGroup();
+
+        document.getElementById("btn_layer1").addEventListener("click", function() {
+            map.removeLayer(layer2);
+            map.removeLayer(layer3);
+            map.addLayer(layer1);
+        });
+
+        document.getElementById("btn_layer2").addEventListener("click", function() {
+            map.removeLayer(layer1);
+            map.removeLayer(layer3);
+            map.addLayer(layer2);
+        });
+
+        document.getElementById("btn_layer3").addEventListener("click", function() {
+            map.removeLayer(layer1);
+            map.removeLayer(layer2);
+            map.addLayer(layer3);
+        });
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        // Button event to fetch data from Web API
+        document.querySelector('button#btn_request').addEventListener('click', function(event){
+            fetch('http://127.0.0.1:5000/golf',{
+                method: "GET"
+            }).then(function(response){
+                return response.json();
+            }).then(function(arr){
+                // Clear previous markers
+                layer1.clearLayers();
+                layer2.clearLayers();
+                layer3.clearLayers();
+
+                let tbody = document.querySelector('table > tbody');
+                tbody.innerHTML = '';
+
+                for(let o of arr){
+                    let tr = document.createElement("tr");
+                    tr.innerHTML = `<td>${o['golf_shake_rank']}</td>
+                                    <td>${o['title']}</td>
+                                    <td>${o['Location']}</td>
+                                    <td>${o['Address']}</td>
+                                    <td>${o['Tel']}</td>
+                                    <td><a href="${o['link']}" target="_blank">link</a></td>`;
+                    tbody.appendChild(tr);
+
+                    let marker = L.marker([o['Latitude'], o['Longitude']])
+                        .bindPopup(`<div style="max-width: 300px; text-align: center;">
+                                    ${o['title']}<br>
+                                    <img src="${o['Image URL']}" alt="${o['title']}" style="width: 100%; height: auto;"><br>
+                                    <a href="${o['Website']}" target="_blank">Book Online</a>
+                                    </div>`, { className: 'fit-popup' })
+                        .openPopup();
+
+                    // 將排名分成三層
+                    marker.addEventListener('click', function(event){
+                        console.log(o);
+                    });
+
+                    if (o['golf_shake_rank'] <= 33) {
+                        layer1.addLayer(marker);
+                    } else if (o['golf_shake_rank'] <= 66) {
+                        layer2.addLayer(marker);
+                    } else {
+                        layer3.addLayer(marker);
+                    }
+                }
+                layer1.addTo(map);
+                layer2.addTo(map);
+                layer3.addTo(map);
+            });
+        });
+
+    // Go to top of page
+        document.getElementById("Top").addEventListener("click", function() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+
+    // 滑到底會跳出top button
+        window.addEventListener("scroll", function() {
+            if (window.scrollY > (document.body.scrollHeight - window.innerHeight) * 0.9) {
+                document.getElementById("Top").style.display = "block";
+            } else {
+                document.getElementById("Top").style.display = "none";
+            }
+        });
+
+
+
+
